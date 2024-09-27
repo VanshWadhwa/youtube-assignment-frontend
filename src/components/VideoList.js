@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import axios from 'axios';
 
 const VideoList = () => {
@@ -19,29 +19,44 @@ const VideoList = () => {
         }
     };
 
+    const searchVideos = async (page, limit, sortOrder) => {
+        if (!searchQuery.trim()) {
+            fetchVideos(page, limit, sortOrder);
+            return;
+        }
+
+        try {
+            const response = await axios.get(`/api/video/search?query=${searchQuery}&page=${page}&limit=${limit}&sortOrder=${sortOrder}`);
+            setVideos(response.data.videos);
+            setTotalVideos(response.data.total);
+        } catch (error) {
+            console.error(error);
+        }
+    };
+
     useEffect(() => {
         fetchVideos(page, limit, sortOrder);
     }, [page, limit, sortOrder]);
 
-    const handleSearch = async () => {
+    const handleSearch = () => {
         setPage(1);
-        if (!searchQuery.trim()) {
-            fetchVideos(1, limit, sortOrder);
-            return;
-        }
-        try {
-            const response = await axios.get(`/api/video/search?query=${searchQuery}`);
-            setVideos(response.data);
-            setTotalVideos(response.data.length);
-        } catch (error) {
-            console.error(error);
-        }
+        searchVideos(1, limit, sortOrder);
     };
 
     const resetSearch = () => {
         setSearchQuery('');
         setPage(1);
         fetchVideos(1, limit, sortOrder);
+    };
+
+    const handleSortChange = (e) => {
+        setSortOrder(e.target.value);
+        setPage(1);
+    };
+
+    const handleLimitChange = (e) => {
+        setLimit(Number(e.target.value));
+        setPage(1);
     };
 
     const startCronJob = async () => {
@@ -62,16 +77,6 @@ const VideoList = () => {
             console.error(error);
             alert('Error stopping cron job.');
         }
-    };
-
-    const handleSortChange = (e) => {
-        setSortOrder(e.target.value);
-        setPage(1);
-    };
-
-    const handleLimitChange = (e) => {
-        setLimit(Number(e.target.value));
-        setPage(1);
     };
 
     return (
